@@ -3,14 +3,20 @@
     windows_subsystem = "windows"
 )]
 
-use std::{fs::File, ops::DerefMut, sync::Mutex};
+use std::{
+    fs::File,
+    ops::DerefMut,
+    sync::{Arc, Mutex},
+};
 
-use app::{ClipboardError, CloseError, Error, SfState, Vault};
+use app::{save_and_close_vault, ClipboardError, CloseError, Error, SfState, Vault};
 use rustpass::{Error as RpError, RpVaultEncrypted, VaultEntry};
 use tauri::{api::dialog, State};
 fn main() {
+    let state = Arc::new(Mutex::new(None as Option<SfState>));
+    let close_state = state.clone();
     let app = tauri::Builder::default()
-        .manage(Mutex::new(None as Option<SfState>))
+        .manage(state)
         .invoke_handler(tauri::generate_handler![
             open_file_select,
             open_vault,
@@ -22,7 +28,22 @@ fn main() {
             remove_entry,
             update_entry,
             set_clipboard,
-        ]);
+        ])
+        .on_window_event(move |g_event| match g_event.event() {
+            tauri::WindowEvent::CloseRequested { api: _, .. } => {
+                let mut state = close_state.lock().unwrap();
+                let state: &mut Option<SfState> = &mut state;
+                let state = std::mem::take(state);
+                match state {
+                    Some(state) => match save_and_close_vault(state) {
+                        Ok(_) => (),
+                        Err(_) => println!("Could not save vault before closing"),
+                    },
+                    None => todo!(),
+                }
+            }
+            _ => (),
+        });
 
     app.run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -43,7 +64,7 @@ fn open_file_select() -> String {
 fn open_vault(
     path: String,
     password: String,
-    vault_lock: State<Mutex<Option<SfState>>>,
+    vault_lock: State<Arc<Mutex<Option<SfState>>>>,
 ) -> Result<Vault, Error> {
     let mut vault_op = vault_lock.lock().unwrap();
     if vault_op.is_some() {
@@ -71,7 +92,7 @@ fn open_vault(
 }
 
 #[tauri::command]
-fn get_vault(vault_lock: State<Mutex<Option<SfState>>>) -> Option<Vault> {
+fn get_vault(vault_lock: State<Arc<Mutex<Option<SfState>>>>) -> Option<Vault> {
     let state_op = &*vault_lock.lock().unwrap();
     match &state_op {
         Some(state) => Some(Vault {
@@ -83,32 +104,22 @@ fn get_vault(vault_lock: State<Mutex<Option<SfState>>>) -> Option<Vault> {
 }
 
 #[tauri::command]
-fn close_vault(vault_lock: State<Mutex<Option<SfState>>>) -> Result<(), CloseError> {
+fn close_vault(vault_lock: State<Arc<Mutex<Option<SfState>>>>) -> Result<(), CloseError> {
     let mut state_op = vault_lock.lock().unwrap();
     let mut foo = state_op.deref_mut();
     if foo.is_some() {
         let res = std::mem::replace(foo.deref_mut(), None).unwrap();
-        match res.vault.encrypt(&res.password) {
-            Ok(enc_vault) => {
-                let vault_file = File::create(&res.path).expect("Could not open file");
-                if let Err(_err) = ciborium::ser::into_writer(&enc_vault, &vault_file) {
-                    // TODO improve error handling
-                    return Err(CloseError::FilesystemError);
-                }
-                vault_file.sync_all().expect("Could not sync file");
-            }
-            Err(_) => {
-                // Should not fail as we save the password in our state
-                return Err(CloseError::PasswordError);
-            }
-        }
+        return save_and_close_vault(res);
     }
 
     Ok(())
 }
 
 #[tauri::command]
-fn set_last_used(vault_lock: State<Mutex<Option<SfState>>>, index: usize) -> Result<Vault, Error> {
+fn set_last_used(
+    vault_lock: State<Arc<Mutex<Option<SfState>>>>,
+    index: usize,
+) -> Result<Vault, Error> {
     let mut state_op = vault_lock.lock().unwrap();
     let state = match &mut *state_op {
         Some(state) => state,
@@ -120,7 +131,7 @@ fn set_last_used(vault_lock: State<Mutex<Option<SfState>>>, index: usize) -> Res
 
 #[tauri::command]
 fn change_password(
-    vault_lock: State<Mutex<Option<SfState>>>,
+    vault_lock: State<Arc<Mutex<Option<SfState>>>>,
     new_password: String,
 ) -> Result<(), Error> {
     let mut state_op = vault_lock.lock().unwrap();
@@ -136,7 +147,7 @@ fn change_password(
 
 #[tauri::command]
 fn add_entry(
-    vault_lock: State<Mutex<Option<SfState>>>,
+    vault_lock: State<Arc<Mutex<Option<SfState>>>>,
     title: Option<String>,
     website: String,
     username: String,
@@ -154,7 +165,10 @@ fn add_entry(
 }
 
 #[tauri::command]
-fn remove_entry(vault_lock: State<Mutex<Option<SfState>>>, index: usize) -> Result<Vault, Error> {
+fn remove_entry(
+    vault_lock: State<Arc<Mutex<Option<SfState>>>>,
+    index: usize,
+) -> Result<Vault, Error> {
     let mut state_op = vault_lock.lock().unwrap();
     let state = match &mut *state_op {
         Some(state) => state,
@@ -166,7 +180,7 @@ fn remove_entry(vault_lock: State<Mutex<Option<SfState>>>, index: usize) -> Resu
 
 #[tauri::command]
 fn update_entry(
-    vault_lock: State<Mutex<Option<SfState>>>,
+    vault_lock: State<Arc<Mutex<Option<SfState>>>>,
     index: usize,
     entry: VaultEntry,
 ) -> Result<Vault, Error> {
@@ -182,7 +196,6 @@ fn update_entry(
 #[cfg(target_os = "windows")]
 #[tauri::command]
 fn set_clipboard(what: &str, content: &str, private: bool) -> Result<(), ClipboardError> {
-    return Err(ClipboardError::NoNativeImplementation);
     use tauri::api::notification::Notification;
     use windows::{
         core::HSTRING,
@@ -215,6 +228,12 @@ fn set_clipboard(what: &str, content: &str, private: bool) -> Result<(), Clipboa
         )
         .show()
         .expect("Could not display notification");
+    } else {
+        let noti = Notification::new("com.sbauer.safeword"); //TODO maybe do not hardcode this
+        noti.title(format!("{} has been copied", what))
+            .body("You can now paste from your clipboard.")
+            .show()
+            .expect("Could not display notification");
     }
 
     Ok(())

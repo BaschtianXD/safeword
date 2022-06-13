@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { AddEntryArgument, Vault, VaultEntry } from '../backendtypes';
 import Detail from './Detail';
-import HeaderBatItem from './HeaderBarItem';
+import HeaderBarItem from './HeaderBarItem';
 import { IoAdd, IoLockClosed } from "react-icons/io5"
 import Input from './Input';
+import Modal from './Modal';
+import Button, { ButtonType } from './Button';
 
 type MasterProps = {
   vault: Vault
@@ -33,26 +35,39 @@ function Master(props: MasterProps) {
   const [website, setWebsite] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [pendingDelete, setPendingDelete] = useState(undefined as number | undefined)
 
-  const closeDialog = () => {
+  const closeNewEntryDialog = () => {
     setNewEntry(false)
     setWebsite("")
     setUsername("")
     setPassword("")
   }
 
+  const deletePendingEntry = () => {
+    if (pendingDelete) {
+      props.onDeleteEntry?.(pendingDelete)
+      setSelectedEntry(undefined)
+    }
+    closeDeleteDialog()
+  }
+
+  const closeDeleteDialog = () => {
+    setPendingDelete(undefined)
+  }
+
 
   return (
     <div className='flex flex-col w-full items-stretch h-full'>
-      <div className='flex flex-row w-full h-10 items-center gap-1 justify-start bg-slate-300 px-1'>
-        <HeaderBatItem onClick={() => props.onCloseVault?.()} icon={<IoLockClosed />} />
-        <HeaderBatItem icon={<IoAdd />} onClick={() => setNewEntry(true)} />
-        <HeaderBatItem text='Change password' />
-        <HeaderBatItem text='Import' />
+      <div className='flex flex-row w-full h-10 items-center gap-1 justify-start bg-secondary'>
+        <HeaderBarItem onClick={() => props.onCloseVault?.()} icon={<IoLockClosed />} />
+        <HeaderBarItem icon={<IoAdd />} onClick={() => setNewEntry(true)} />
+        <HeaderBarItem text='Change password' />
+        <HeaderBarItem text='Import' />
       </div>
 
       <div className='flex flex-row grow h-full overflow-auto'>
-        <div className='w-64 overflow-auto divide-y divide-slate-800'>
+        <div className='w-64 overflow-auto divide-y divide-slate-800 bg-background-light'>
           {/* Master */}
           {props.vault.data.map((entry, index) => {
             return (
@@ -69,15 +84,14 @@ function Master(props: MasterProps) {
           {selectedEntry ?
             <Detail entry={selectedEntry}
               onDeleteClick={() => {
-                props.onDeleteEntry?.(props.vault.data.indexOf(selectedEntry))
-                setSelectedEntry(undefined)
+                setPendingDelete(props.vault.data.indexOf(selectedEntry))
               }}
             /> : <p className='m-auto text-center w-full'>Selecte an entry to display more information</p>}
         </div>
 
       </div>
 
-      <dialog open={newEntry} className="open:backdrop-blur-sm w-full h-full bg-transparent">
+      <Modal open={newEntry} blocking blur>
         <div className='w-full h-full flex flex-row justify-center'>
           <div className='w-1/2 h-fit bg-white rounded-md px-4 py-2 shadow-lg flex flex-col gap-4'>
             <div>
@@ -110,16 +124,27 @@ function Master(props: MasterProps) {
                   password: password,
                   username: username,
                   website: website
-                }).then(() => closeDialog())}
+                }).then(() => closeNewEntryDialog())}
               >Add entry</button>
               <button className="m-auto bg-slate-300 rounded p-1"
-                onClick={() => closeDialog()}
+                onClick={() => closeNewEntryDialog()}
               >Cancel</button>
             </div>
           </div>
         </div>
-      </dialog>
+      </Modal>
 
+      <Modal open={pendingDelete !== undefined} blocking blur>
+        <div className='w-full h-full grid justify-center items-center'>
+          <div className='h-fit bg-white rounded-md px-4 py-2 shadow-lg flex flex-col gap-5'>
+            <p>Do you want to delete this entry?</p>
+            <div className='flex flex-row justify-center gap-6'>
+              <Button text="Delete" type={ButtonType.negative} onClick={() => deletePendingEntry()} />
+              <Button text="Cancel" onClick={() => closeDeleteDialog()} />
+            </div>
+          </div>
+        </div>
+      </Modal>
 
 
 

@@ -4,12 +4,16 @@ interface InputProps {
     type?: React.HTMLInputTypeAttribute
     readOnly?: boolean
     monoSpaceFont?: boolean
+    tabIndex?: number
 }
 
 function Input(props: InputProps) {
-    let className = "bg-slate-300 rounded p-1 w-full grow outline outline-2 outline-slate-400 focus:outline-slate-600"
+    let className = "bg-secondary rounded p-1 w-full grow outline outline-1 outline-primary focus:outline-2"
     if (props.monoSpaceFont) {
         className += " font-mono"
+    }
+    if (props.readOnly) {
+        className += "mouse-event-none"
     }
     return (
         <input
@@ -18,6 +22,7 @@ function Input(props: InputProps) {
             type={props.type}
             value={props.value}
             readOnly={props.readOnly}
+            tabIndex={props.tabIndex}
         ></input>
     )
 }

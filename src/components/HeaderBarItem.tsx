@@ -6,10 +6,10 @@ type HeaderBatItemProps = {
     onClick?: MouseEventHandler<HTMLButtonElement>
 }
 
-function HeaderBatItem(props: HeaderBatItemProps) {
+function HeaderBarItem(props: HeaderBatItemProps) {
     return (
         <button className='hover:bg-slate-400 rounded px-1 h-6' onClick={props.onClick}>{props.text}{props.icon}</button>
     )
 }
 
-export default HeaderBatItem
+export default HeaderBarItem

@@ -38,12 +38,24 @@ export async function openVault(path: string, password: string) {
     })
 }
 
+export async function createVault(name: string, path: string, password: string) {
+    return invoke<Vault>("create_vault", {
+        name,
+        path,
+        password
+    })
+}
+
 export async function getVault() {
     return invoke<Vault>("get_vault")
 }
 
 export async function openFileSelect() {
     return invoke<string>("open_file_select")
+}
+
+export async function openFileSave(filename: string = "vault") {
+    return invoke<string>("open_file_save")
 }
 
 export async function closeVault() {

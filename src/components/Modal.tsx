@@ -1,29 +1,29 @@
 import { ReactNode } from "react"
-import ReactDOM from "react-dom";
 
 type ModalProps = {
+    open: boolean
     children?: [ReactNode] | ReactNode
     blocking?: boolean
     blur?: boolean
 }
 
-const modalRoot = document.getElementById("portal")!;
+function Modal(props: ModalProps) {
 
-function Modal({ children, blur = false, blocking = false }: ModalProps) {
-
-    var className = "w-screen h-screen transition-all"
-    if (blur) {
-        className += " backdrop-blur"
+    var className = "w-full h-full bg-transparent"
+    if (props.blur) {
+        className += " open:backdrop-blur-sm"
     }
-    if (blocking) {
+    if (props.blocking) {
         className += " pointer-events-auto"
+    } else {
+        className += " pointer-events-none"
     }
 
-    return ReactDOM.createPortal(
-        <div className={className}>
-            {children}
-        </div>,
-        modalRoot)
+    return (
+        <dialog open={props.open} className={className}>
+            {props.children}
+        </dialog>
+    )
 }
 
 export default Modal

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { openFileSelect, openVault, Vault } from '../backendtypes';
+import { createVault, openFileSave, openFileSelect, openVault, Vault } from '../backendtypes';
 import Input from './Input';
 import Modal from './Modal';
 
@@ -12,6 +12,17 @@ function VaultSelection(props: HomeProps) {
     const [path, setPath] = useState("")
     const [password, setPassword] = useState("")
     const [error, setError] = useState("")
+    const [newVault, setNewVault] = useState(false)
+    const [newVaultName, setNewVaultName] = useState("")
+    const [newVaultPath, setNewVaultPath] = useState("")
+    const [newVaultPassword, setNewVaultPassword] = useState("")
+
+    const closeDialog = () => {
+        setNewVault(false)
+        setNewVaultName("")
+        setNewVaultPassword("")
+        setNewVaultPath("")
+    }
 
 
     return (
@@ -32,7 +43,7 @@ function VaultSelection(props: HomeProps) {
                         <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
                     </div>
                     <div>
-                        <button className='bg-slate-300 rounded p-1' disabled={!path && !password} onClick={event => {
+                        <button className='bg-slate-300 rounded p-1 disabled:text-slate-400' disabled={!path && !password} onClick={event => {
                             openVault(path, password).then(vault => {
                                 props.setVault(vault)
                                 setError("")
@@ -44,21 +55,60 @@ function VaultSelection(props: HomeProps) {
                                     setError("This is not a SafeWord vault")
                                 }
                             })
-                        }}>Open Vault</button>
+                        }}>Open vault</button>
                     </div>
+                    <p>or</p>
                     <div>
-                        <button className='bg-slate-300 rounded p-1 cursor-not-allowed'>Create Vault</button>
+                        <button className='bg-slate-300 rounded p-1 cursor-not-allowed' onClick={() => setNewVault(true)}>Create a new vault</button>
                     </div>
                 </div>
 
             </div>
-            {error &&
-                <Modal>
-                    <div className='flex flex-row justify-around mb-5 bottom-0 w-full absolute pointer-events-auto select-none' onClick={() => setError("")}>
-                        <p className='border-2 border-red-600 bg-red-400 p-2 rounded'>{error}</p>
+            <Modal open={!!error}>
+                <div className='flex flex-row justify-around mb-5 bottom-0 w-full absolute pointer-events-auto select-none' onClick={() => setError("")}>
+                    <p className='border-2 border-red-600 bg-red-400 p-2 rounded'>{error}</p>
+                </div>
+            </Modal>
+
+            <Modal open={newVault} blocking blur>
+                <div className='w-full h-full flex flex-row justify-center'>
+                    <div className='w-[550px] h-fit bg-white rounded-md px-4 py-2 shadow-lg flex flex-col gap-4'>
+                        <div>
+                            <p className='w-full text-center font-bold'>Create a new vault</p>
+                        </div>
+                        <div className='w-full'>
+                            <p>Name</p>
+                            <Input value={newVaultName} onChange={event => setNewVaultName(event.target.value)} />
+                        </div>
+                        <div className='w-full'>
+                            <p>Path</p>
+                            <div className='flex flex-row w-full'>
+                                <Input value={newVaultPath} readOnly />
+                                <button className="m-auto bg-slate-300 rounded p-1" onClick={() => openFileSave(newVaultName ?? undefined).then(path => setNewVaultPath(path))}>
+                                    Select path
+                                </button>
+                            </div>
+                        </div>
+                        <div className='w-full'>
+                            <p>Password</p>
+                            <Input value={newVaultPassword} monoSpaceFont onChange={event => setNewVaultPassword(event.target.value)} />
+                        </div>
+
+
+                        <div className='flex flex-row mt-4'>
+                            <button className="m-auto bg-slate-300 rounded p-1"
+                                onClick={() => createVault(newVaultName, newVaultPath, newVaultPassword).then(vault => props.setVault(vault)).catch(err => setError("Could not create vault."))}
+                            >Add entry</button>
+                            <button className="m-auto bg-slate-300 rounded p-1"
+                                onClick={() => closeDialog()}
+                            >Cancel</button>
+                        </div>
                     </div>
-                </Modal>}
+                </div>
+            </Modal>
         </div>
+
+
 
     );
 }

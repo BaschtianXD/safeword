@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { addEntry, AddEntryArgument, Vault, VaultEntry } from '../backendtypes';
+import { AddEntryArgument, Vault, VaultEntry } from '../backendtypes';
 import Detail from './Detail';
 import HeaderBatItem from './HeaderBarItem';
 import { IoAdd, IoLockClosed } from "react-icons/io5"
@@ -76,52 +76,51 @@ function Master(props: MasterProps) {
         </div>
 
       </div>
-      {newEntry ?
-        <dialog open className="open:backdrop-blur-sm w-full h-full bg-transparent">
-          <div className='w-full h-full flex flex-row justify-center'>
-            <div className='w-1/2 h-fit bg-white rounded-md px-4 py-2 shadow-lg flex flex-col gap-4'>
-              <div>
-                <p className='w-full text-center font-bold'>Add new entry</p>
-              </div>
-              <div className='w-full'>
-                <p>Website</p>
-                <Input value={website} onChange={event => setWebsite(event.target.value)} />
-              </div>
-              <div>
-                <p>Username</p>
-                <Input value={username} onChange={event => setUsername(event.target.value)} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <div className='flex flex-row justify-between items-end'>
-                  <p>Password</p>
-                  <button
-                    onClick={() =>
-                      setPassword(generateSecurePassword())
-                    }
-                    className="bg-slate-300 rounded p-1">Generate safe password</button>
-                </div>
-                <Input value={password} monoSpaceFont onChange={event => setPassword(event.target.value)} />
-              </div>
 
-              <div className='flex flex-row mt-4'>
-                <button className="m-auto bg-slate-300 rounded p-1"
-                  onClick={() => props.onAddEntry?.({
-                    comment: "",
-                    password: password,
-                    username: username,
-                    website: website
-                  }).then(() => closeDialog())}
-                >Add entry</button>
-                <button className="m-auto bg-slate-300 rounded p-1"
-                  onClick={() => closeDialog()}
-                >Cancel</button>
+      <dialog open={newEntry} className="open:backdrop-blur-sm w-full h-full bg-transparent">
+        <div className='w-full h-full flex flex-row justify-center'>
+          <div className='w-1/2 h-fit bg-white rounded-md px-4 py-2 shadow-lg flex flex-col gap-4'>
+            <div>
+              <p className='w-full text-center font-bold'>Add new entry</p>
+            </div>
+            <div className='w-full'>
+              <p>Website</p>
+              <Input value={website} onChange={event => setWebsite(event.target.value)} />
+            </div>
+            <div>
+              <p>Username</p>
+              <Input value={username} onChange={event => setUsername(event.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <div className='flex flex-row justify-between items-end'>
+                <p>Password</p>
+                <button
+                  onClick={() =>
+                    setPassword(generateSecurePassword())
+                  }
+                  className="bg-slate-300 rounded p-1">Generate safe password</button>
               </div>
+              <Input value={password} monoSpaceFont onChange={event => setPassword(event.target.value)} />
             </div>
 
+            <div className='flex flex-row mt-4'>
+              <button className="m-auto bg-slate-300 rounded p-1"
+                onClick={() => props.onAddEntry?.({
+                  comment: "",
+                  password: password,
+                  username: username,
+                  website: website
+                }).then(() => closeDialog())}
+              >Add entry</button>
+              <button className="m-auto bg-slate-300 rounded p-1"
+                onClick={() => closeDialog()}
+              >Cancel</button>
+            </div>
           </div>
+        </div>
+      </dialog>
 
-        </dialog>
-        : <></>}
+
 
 
 

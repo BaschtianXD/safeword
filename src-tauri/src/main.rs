@@ -10,7 +10,7 @@ use std::{
 };
 
 use app::{save_and_close_vault, ClipboardError, CloseError, Error, SfState, Vault};
-use rustpass::{Error as RpError, RpVaultEncrypted, VaultEntry};
+use rustpass::{Error as RpError, RpVault, RpVaultEncrypted, VaultEntry};
 use tauri::{api::dialog, State};
 fn main() {
     let state = Arc::new(Mutex::new(None as Option<SfState>));
@@ -19,6 +19,8 @@ fn main() {
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             open_file_select,
+            open_file_save,
+            create_vault,
             open_vault,
             close_vault,
             set_last_used,
@@ -30,6 +32,7 @@ fn main() {
             set_clipboard,
         ])
         .on_window_event(move |g_event| match g_event.event() {
+            // close and save the vault on exit
             tauri::WindowEvent::CloseRequested { api: _, .. } => {
                 let mut state = close_state.lock().unwrap();
                 let state: &mut Option<SfState> = &mut state;
@@ -39,7 +42,7 @@ fn main() {
                         Ok(_) => (),
                         Err(_) => println!("Could not save vault before closing"),
                     },
-                    None => todo!(),
+                    None => (),
                 }
             }
             _ => (),
@@ -58,6 +61,45 @@ fn open_file_select() -> String {
         Some(path) => path.into_os_string().into_string().expect(""),
         None => "".into(),
     }
+}
+
+#[tauri::command]
+fn open_file_save(name: Option<&str>) -> String {
+    match dialog::blocking::FileDialogBuilder::new()
+        .add_filter("SafeWordVault", &["swv"])
+        .set_file_name(name.unwrap_or(""))
+        .save_file()
+    {
+        Some(path) => path.into_os_string().into_string().expect(""),
+        None => "".into(),
+    }
+}
+
+#[tauri::command]
+fn create_vault(
+    name: String,
+    path: String,
+    password: String,
+    vault_lock: State<Arc<Mutex<Option<SfState>>>>,
+) -> Result<Vault, Error> {
+    let vault = match RpVault::new_with_password(name.clone(), &password) {
+        Ok(vault) => vault,
+        Err(_) => return Err(Error::Base(RpError::Unknown)),
+    };
+    let mut vault_op = vault_lock.lock().unwrap();
+    if vault_op.is_some() {
+        return Err(Error::VaultAlreadyOpened);
+    }
+    *vault_op = Some(SfState {
+        path,
+        password,
+        vault,
+    });
+
+    return Ok(Vault {
+        name,
+        data: Vec::new(),
+    });
 }
 
 #[tauri::command]

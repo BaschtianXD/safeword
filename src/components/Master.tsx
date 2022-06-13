@@ -6,6 +6,7 @@ import { IoAdd, IoLockClosed } from "react-icons/io5"
 import Input from './Input';
 import Modal from './Modal';
 import Button, { ButtonType } from './Button';
+import VaultSelection from './VaultSelection';
 
 type MasterProps = {
   vault: Vault
@@ -33,6 +34,7 @@ function Master(props: MasterProps) {
   const [selectedEntry, setSelectedEntry] = useState(undefined as VaultEntry | undefined)
   const [newEntry, setNewEntry] = useState(false)
   const [website, setWebsite] = useState("")
+  const [customTitle, setCustomTitle] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [pendingDelete, setPendingDelete] = useState(undefined as number | undefined)
@@ -42,6 +44,7 @@ function Master(props: MasterProps) {
     setWebsite("")
     setUsername("")
     setPassword("")
+    setCustomTitle("")
   }
 
   const deletePendingEntry = () => {
@@ -56,10 +59,22 @@ function Master(props: MasterProps) {
     setPendingDelete(undefined)
   }
 
+  const getTitle = () => {
+    if (customTitle) {
+      return customTitle
+    } else {
+      var res = website
+      if (username) {
+        res = username + " @ " + website
+      }
+      return res
+    }
+  }
+
 
   return (
     <div className='flex flex-col w-full items-stretch h-full'>
-      <div className='flex flex-row w-full h-10 items-center gap-1 justify-start bg-secondary'>
+      <div className='flex flex-row w-full h-10 items-center gap-1 justify-start bg-secondary px-2'>
         <HeaderBarItem onClick={() => props.onCloseVault?.()} icon={<IoLockClosed />} />
         <HeaderBarItem icon={<IoAdd />} onClick={() => setNewEntry(true)} />
         <HeaderBarItem text='Change password' />
@@ -67,17 +82,22 @@ function Master(props: MasterProps) {
       </div>
 
       <div className='flex flex-row grow h-full overflow-auto'>
-        <div className='w-64 overflow-auto divide-y divide-slate-800 bg-background-light'>
+        <div className='w-96 overflow-auto divide-y divide-slate-800 bg-background-light'>
           {/* Master */}
-          {props.vault.data.map((entry, index) => {
-            return (
-              <div className='flex flex-col items-start p-2 cursor-pointer' key={index} onClick={event => setSelectedEntry(entry)}>
-                <p>{entry.title}</p>
-                <p>{entry.data.Password.username}</p>
-              </div>
-
-            )
-          })}
+          <table className='w-full table-auto border border-collapse cursor-default'>
+            <tr>
+              <th className='border'>Website</th>
+              <th className='border'>Username</th>
+            </tr>
+            {props.vault.data.map(entry => {
+              return (
+                <tr className='cursor-pointer' onClick={() => setSelectedEntry(entry)}>
+                  <td className='border p-1'>{entry.data.Password.website}</td>
+                  <td className='border p-1'>{entry.data.Password.username}</td>
+                </tr>
+              )
+            })}
+          </table>
         </div>
         <div className='grow'>
           {/* Detail */}
@@ -92,21 +112,27 @@ function Master(props: MasterProps) {
       </div>
 
       <Modal open={newEntry} blocking blur>
-        <div className='w-full h-full flex flex-row justify-center'>
-          <div className='w-1/2 h-fit bg-white rounded-md px-4 py-2 shadow-lg flex flex-col gap-4'>
+        <div className='w-full h-full grid justify-center items-center'>
+          <div className='w-fit h-fit bg-white rounded-md px-4 py-2 shadow-lg flex flex-col gap-4'>
             <div>
               <p className='w-full text-center font-bold'>Add new entry</p>
             </div>
             <div className='w-full'>
               <p>Website</p>
-              <Input value={website} onChange={event => setWebsite(event.target.value)} />
+              <Input value={website} onChange={event => {
+                setWebsite(event.target.value)
+              }} />
             </div>
             <div>
               <p>Username</p>
               <Input value={username} onChange={event => setUsername(event.target.value)} />
             </div>
+            <div>
+              <p>Title</p>
+              <Input value={getTitle()} onChange={event => setCustomTitle(event.target.value)} />
+            </div>
             <div className="flex flex-col gap-1">
-              <div className='flex flex-row justify-between items-end'>
+              <div className='flex flex-row justify-between items-end gap-10'>
                 <p>Password</p>
                 <button
                   onClick={() =>
@@ -123,7 +149,8 @@ function Master(props: MasterProps) {
                   comment: "",
                   password: password,
                   username: username,
-                  website: website
+                  website: website,
+                  title: getTitle()
                 }).then(() => closeNewEntryDialog())}
               >Add entry</button>
               <button className="m-auto bg-slate-300 rounded p-1"

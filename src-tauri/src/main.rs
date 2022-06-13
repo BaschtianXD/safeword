@@ -14,6 +14,7 @@ use rustpass::{Error as RpError, RpVault, RpVaultEncrypted, VaultEntry};
 use tauri::{api::dialog, State};
 fn main() {
     let state = Arc::new(Mutex::new(None as Option<SfState>));
+    // Take clone of state that we can access when the window get closed so we can save the vault
     let close_state = state.clone();
     let app = tauri::Builder::default()
         .manage(state)

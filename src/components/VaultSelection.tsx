@@ -76,7 +76,7 @@ function VaultSelection(props: HomeProps) {
             </Modal>
 
             <Modal open={newVault} blocking blur>
-                <div className='w-full h-full flex flex-row justify-center'>
+                <div className='w-full h-full grid items-center justify-center'>
                     <div className='w-[550px] h-fit bg-white rounded-md px-4 py-2 shadow-lg flex flex-col gap-4'>
                         <div>
                             <p className='w-full text-center font-bold'>Create a new vault</p>

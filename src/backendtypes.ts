@@ -29,6 +29,7 @@ export type AddEntryArgument = {
     username: string,
     password: string,
     comment: string,
+    title: string
 }
 
 export async function openVault(path: string, password: string) {
@@ -55,7 +56,9 @@ export async function openFileSelect() {
 }
 
 export async function openFileSave(filename: string = "vault") {
-    return invoke<string>("open_file_save")
+    return invoke<string>("open_file_save", {
+        name: filename
+    })
 }
 
 export async function closeVault() {

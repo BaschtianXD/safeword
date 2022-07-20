@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use rustpass::{Error as RPError, RpVault, VaultEntry};
+use rustpass::{Error as RPError, Vault as RpVault, VaultEntry};
 use serde::{Deserialize, Serialize};
 
 pub struct SfState {

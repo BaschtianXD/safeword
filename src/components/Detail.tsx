@@ -26,7 +26,7 @@ function Detail(props: DetailProps) {
             </div>
             <div className="flex flex-col gap-4">
                 <div className="flex flex-row gap-2">
-                    <Label text="Website" />
+                    <Label text="Website:" />
                     <p>{props.entry.data.Password.website}</p>
                 </div>
                 <div className="flex flex-row gap-2">
@@ -49,6 +49,7 @@ function Detail(props: DetailProps) {
                     <button onClick={() => {
                         setClipboard("Password", props.entry.data.Password.password, true).catch((err) => {
                             if (err === 'NoNativeImplementation') {
+                                // We could not paste from the "backend" so do it via webview
                                 navigator.clipboard.writeText(props.entry.data.Password.password)
                             }
                         })

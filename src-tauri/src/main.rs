@@ -10,7 +10,9 @@ use std::{
 };
 
 use app::{save_and_close_vault, ClipboardError, CloseError, Error, SfState, Vault};
-use rustpass::{Error as RpError, RpVault, RpVaultEncrypted, VaultEntry};
+use rustpass::{
+    Error as RpError, Vault as RpVault, VaultEncrypted as RpVaultEncrypted, VaultEntry,
+};
 use tauri::{api::dialog, State};
 fn main() {
     let state = Arc::new(Mutex::new(None as Option<SfState>));

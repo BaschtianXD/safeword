@@ -6,7 +6,6 @@ import { IoAdd, IoLockClosed } from "react-icons/io5"
 import Input from './Input';
 import Modal from './Modal';
 import Button, { ButtonType } from './Button';
-import VaultSelection from './VaultSelection';
 
 type MasterProps = {
   vault: Vault
@@ -15,19 +14,22 @@ type MasterProps = {
   onAddEntry?: (entry: AddEntryArgument) => Promise<void>
 }
 
-function generateSecurePassword(): string {
-  const elements = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!_"
-  var raw = new Uint8Array(18)
+function generateSecurePassword(length: number, delimiter: number): string {
+  delimiter = delimiter < 4 ? 0 : delimiter
+  const elements = "abcdefghijklmnopqrstuvwxyz!?.,$%/;:-_#+*§&(){[]}<>|ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  var raw = new Uint32Array(length)
   window.crypto.getRandomValues(raw)
   var res = ""
   raw.forEach((num, index) => {
-    if (index > 0 && index % 6 === 0) {
+    if (delimiter && index > 0 && index % delimiter === 0) {
       res += "-"
     }
-    res += elements.charAt(num >> 2)
+    res += elements.charAt(Math.floor(num / (2 ** 32) * elements.length))
   })
   return res
 }
+
+const PwLengthDefault = 18
 
 function Master(props: MasterProps) {
 
@@ -38,6 +40,10 @@ function Master(props: MasterProps) {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [pendingDelete, setPendingDelete] = useState(undefined as number | undefined)
+  const [newPwLength, setNewPwLength] = useState(PwLengthDefault)
+
+  // lowest we allow is 4, therefore everything below 4 is considered no delimiter
+  const [newPwDelimiter, setNewPwDelimiter] = useState(3)
 
   const closeNewEntryDialog = () => {
     setNewEntry(false)
@@ -45,6 +51,8 @@ function Master(props: MasterProps) {
     setUsername("")
     setPassword("")
     setCustomTitle("")
+    setNewPwLength(PwLengthDefault)
+    setNewPwDelimiter(3)
   }
 
   const deletePendingEntry = () => {
@@ -131,12 +139,36 @@ function Master(props: MasterProps) {
               <p>Title</p>
               <Input value={getTitle()} onChange={event => setCustomTitle(event.target.value)} />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
+              <p>Password generation</p>
+              <div className='flex flex-col gap-1'>
+                <div className='flex flex-row justify-between'>
+                  <p>Length</p>
+                  <p>{newPwLength < 12 ? "not secure! " : ""}{newPwLength}</p>
+                </div>
+                <input type="range" min="1" max="64" value={newPwLength} onChange={(event) => {
+                  setNewPwLength(Number(event.target.value))
+                  setNewPwDelimiter(Math.min(newPwDelimiter, Math.ceil(newPwLength / 2)))
+                }}></input>
+              </div>
+              <div className='flex flex-col gap-1'>
+                <div className='flex flex-row justify-between'>
+                  <p>Delimiter</p>
+                  {newPwDelimiter >= 4 ?
+                    <p>every {newPwDelimiter} characters</p>
+                    :
+                    <p>none</p>
+                  }
+
+                </div>
+                <input type="range" min="3" max={Math.ceil(newPwLength / 2)} value={newPwDelimiter} onChange={(event) => setNewPwDelimiter(Number(event.target.value))}></input>
+              </div>
+
               <div className='flex flex-row justify-between items-end gap-10'>
                 <p>Password</p>
                 <button
                   onClick={() =>
-                    setPassword(generateSecurePassword())
+                    setPassword(generateSecurePassword(newPwLength, newPwDelimiter))
                   }
                   className="bg-slate-300 rounded p-1">Generate safe password</button>
               </div>

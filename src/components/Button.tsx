@@ -34,7 +34,7 @@ function Button(props: ButtonProps) {
             break
     }
 
-    return (<button className={cName} onClick={() => props.onClick?.()} disabled={props.disabled}>{props.text}</button>)
+    return (<button className={cName} type="button" onClick={() => props.onClick?.()} disabled={props.disabled}>{props.text}</button>)
 }
 
 export default Button

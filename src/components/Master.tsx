@@ -83,7 +83,7 @@ function Master(props: MasterProps) {
   return (
     <div className='flex flex-col w-full items-stretch h-full'>
       <div className='flex flex-row w-full h-10 items-center gap-1 justify-start bg-secondary px-2'>
-        <HeaderBarItem onClick={() => props.onCloseVault?.()} icon={<IoLockClosed />} />
+        <HeaderBarItem icon={<IoLockClosed onClick={() => props.onCloseVault?.()} />} />
         <HeaderBarItem icon={<IoAdd />} onClick={() => setNewEntry(true)} />
         <HeaderBarItem text='Change password' />
         <HeaderBarItem text='Import' />

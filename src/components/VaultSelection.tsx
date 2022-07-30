@@ -27,12 +27,30 @@ function VaultSelection(props: HomeProps) {
         setNewVaultPath("")
     }
 
+    const submitForm = (path: string, password: string) => {
+        if (!path || !password) return
+        openVault(path, password).then(vault => {
+            props.setVault(vault)
+            setError("")
+        }).catch(err => {
+            if (err && err.Base && err.Base === "WrongPassword") {
+                console.log(err)
+                setError("You have entered a wrong password")
+            } else if (err && err.Base && err.Base === "MalformedInput") {
+                setError("This is not a SafeWord vault")
+            }
+        })
+    }
+
 
     return (
         <div className='flex flex-col justify-between h-full'>
             <div className="flex flex-col w-full items-center gap-20">
                 <p className='text-9xl mt-10 text-primary'>SafeWord</p>
-                <div className='flex flex-col items-center w-full gap-4'>
+                <form className='flex flex-col items-center w-full gap-4' onSubmit={(e) => {
+                    e.preventDefault()
+                    submitForm(path, password)
+                }}>
                     <div className='flex flex-row gap-2 items-stretch w-3/4'>
                         <p className='m-auto'>Path</p>
                         <Input value={path} readOnly tabIndex={-1}></Input>
@@ -49,24 +67,15 @@ function VaultSelection(props: HomeProps) {
                     </div>
                     <div>
                         <PrimaryButton text="Open vault" disabled={!path && !password} onClick={() => {
-                            openVault(path, password).then(vault => {
-                                props.setVault(vault)
-                                setError("")
-                            }).catch(err => {
-                                if (err && err.Base && err.Base === "WrongPassword") {
-                                    console.log(err)
-                                    setError("You have entered a wrong password")
-                                } else if (err && err.Base && err.Base === "MalformedInput") {
-                                    setError("This is not a SafeWord vault")
-                                }
-                            })
+                            submitForm(path, password)
                         }} />
                     </div>
                     <p>or</p>
                     <div>
                         <PrimaryButton onClick={() => setNewVault(true)} text="Create new vault" />
                     </div>
-                </div>
+                    <input type="submit" value="Submit" className='hidden' />
+                </form>
 
             </div>
             <Modal open={!!error}>
